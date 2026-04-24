@@ -12,7 +12,6 @@
       padding:15px;
       text-align:center;
       font-weight:bold;
-      font-size:20px;
     }
 
     .page { display:none; padding-bottom:80px; }
@@ -30,7 +29,6 @@
       padding:10px;
       border-radius:12px;
       text-align:center;
-      box-shadow:0 3px 8px rgba(0,0,0,0.1);
     }
 
     .card img {
@@ -57,7 +55,6 @@
       display:flex;
       justify-content:space-around;
       padding:10px 0;
-      box-shadow:0 -2px 5px rgba(0,0,0,0.1);
     }
 
     .cart-btn {
@@ -68,47 +65,33 @@
       padding:15px;
       border-radius:50%;
       cursor:pointer;
-      font-size:18px;
     }
 
-    .section { padding:10px; }
-
-    /* LOGIN MODAL */
     #loginModal {
       display:none;
       position:fixed;
-      top:0;
-      left:0;
       width:100%;
       height:100%;
       background:rgba(0,0,0,0.5);
+      top:0;
     }
 
-    .modal-box {
+    .modal {
+      background:linear-gradient(135deg,#6a0dad,#b92b7c);
+      color:white;
+      padding:20px;
       width:90%;
       max-width:400px;
-      background:linear-gradient(135deg,#6a0dad,#b92b7c);
       margin:100px auto;
-      padding:20px;
       border-radius:15px;
-      color:white;
-      position:relative;
-    }
-
-    .close {
-      position:absolute;
-      right:15px;
-      top:10px;
-      cursor:pointer;
-      font-size:20px;
     }
 
     input {
       width:100%;
       padding:10px;
+      margin-top:10px;
       border-radius:10px;
       border:none;
-      margin-top:10px;
     }
   </style>
 </head>
@@ -117,68 +100,70 @@
 
 <header>⚡ QuickStationery</header>
 
-<!-- HOME -->
 <div id="home" class="page active">
   <div class="products" id="products"></div>
 </div>
 
-<!-- ORDERS -->
 <div id="orders" class="page">
-  <div class="section">
-    <h3>📦 Your Orders</h3>
-    <div id="history"></div>
-  </div>
+  <h3>📦 Orders</h3>
+  <div id="history"></div>
 </div>
 
-<!-- ACCOUNT -->
 <div id="account" class="page">
-  <div class="section">
-    <h3>👤 Account</h3>
-    <p id="username"></p>
-
-    <button onclick="login()">Login</button>
-    <br><br>
-
-    <h4>📍 Address</h4>
-    <button onclick="getLocation()">Use Current Location</button>
-    <p id="locationText"></p>
-
-    <br>
-    <button onclick="logout()">Logout</button>
-  </div>
+  <h3>👤 Account</h3>
+  <p id="username"></p>
+  <button onclick="openLogin()">Login</button>
+  <button onclick="getLocation()">📍 Location</button>
+  <p id="locationText"></p>
 </div>
 
-<!-- CART -->
 <div class="cart-btn" onclick="checkout()">🛒</div>
 
-<!-- NAV -->
 <div class="bottom-nav">
-  <div onclick="showPage('home')">🏠 Home</div>
-  <div onclick="showPage('orders')">📦 Orders</div>
-  <div onclick="showPage('account')">👤 Account</div>
+  <div onclick="showPage('home')">🏠</div>
+  <div onclick="showPage('orders')">📦</div>
+  <div onclick="showPage('account')">👤</div>
 </div>
 
 <!-- LOGIN MODAL -->
 <div id="loginModal">
-  <div class="modal-box">
-    <span class="close" onclick="closeLogin()">✖</span>
+  <div class="modal">
+    <h3>Login</h3>
 
-    <h2>QuickStationery</h2>
-    <p>Delivery in minutes ⚡</p>
+    <div id="recaptcha-container"></div>
 
-    <input id="phoneInput" placeholder="Enter Phone Number">
+    <input id="phone" placeholder="+91XXXXXXXXXX">
+    <button onclick="sendOTP()">Send OTP</button>
 
-    <button style="margin-top:15px; width:100%; background:#ff4da6;" onclick="submitLogin()">
-      Continue
-    </button>
+    <input id="otp" placeholder="Enter OTP" style="display:none;">
+    <button onclick="verifyOTP()" id="verifyBtn" style="display:none;">Verify</button>
 
-    <p style="font-size:12px;">Terms & Privacy</p>
+    <button onclick="closeLogin()">Close</button>
   </div>
 </div>
 
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } 
+from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCUhTRKR6zj2mPgqBc8bSXbN6TdxOqITRc",
+  authDomain: "notejet-202b8.firebaseapp.com",
+  projectId: "notejet-202b8"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+window.auth = auth;
+window.RecaptchaVerifier = RecaptchaVerifier;
+window.signInWithPhoneNumber = signInWithPhoneNumber;
+</script>
+
 <script>
 let cart = [];
-let user = localStorage.getItem("user");
+let confirmationResult;
 
 let items = [
   {name:"Pen",price:10,img:"https://images.unsplash.com/photo-1583485088034-697b5bc36b0f"},
@@ -189,57 +174,18 @@ let items = [
 function loadProducts(){
   let html="";
   items.forEach(i=>{
-    html+=`
-    <div class="card">
+    html+=`<div class="card">
       <img src="${i.img}">
       <h4>${i.name}</h4>
       <p>₹${i.price}</p>
-      <button onclick="addToCart('${i.name}',${i.price})">Add</button>
+      <button onclick="cart.push({name:'${i.name}',price:${i.price}})">Add</button>
     </div>`;
   });
   document.getElementById("products").innerHTML=html;
 }
 loadProducts();
 
-function addToCart(n,p){
-  cart.push({n,p});
-  alert(n+" added");
-}
-
-function checkout(){
-  if(!user){ alert("Login first!"); return; }
-  if(cart.length==0){ alert("Cart empty"); return; }
-
-  let total=0;
-  let msg="Order:\n";
-
-  cart.forEach(i=>{
-    msg+=i.n+" ₹"+i.p+"\n";
-    total+=i.p;
-  });
-
-  msg+="Total ₹"+total;
-
-  let history = JSON.parse(localStorage.getItem("history")||"[]");
-  history.push(msg);
-  localStorage.setItem("history",JSON.stringify(history));
-  showHistory();
-
-  let upi = "upi://pay?pa=ritusingla007@oksbi&pn=QuickStationery&am="+total+"&cu=INR";
-  window.open("https://api.qrserver.com/v1/create-qr-code/?size=200x200&data="+encodeURIComponent(upi));
-
-  cart=[];
-}
-
-function showHistory(){
-  let history = JSON.parse(localStorage.getItem("history")||"[]");
-  let html="";
-  history.forEach(h=> html+="<p>"+h+"</p><hr>");
-  document.getElementById("history").innerHTML=html;
-}
-showHistory();
-
-function login(){
+function openLogin(){
   document.getElementById("loginModal").style.display="block";
 }
 
@@ -247,68 +193,53 @@ function closeLogin(){
   document.getElementById("loginModal").style.display="none";
 }
 
-function submitLogin(){
-  let phone = document.getElementById("phoneInput").value;
+function sendOTP(){
+  let phone = document.getElementById("phone").value;
 
-  if(phone.length < 10){
-    alert("Enter valid number");
-    return;
-  }
+  window.recaptchaVerifier = new RecaptchaVerifier(auth,'recaptcha-container',{size:'normal'});
 
-  localStorage.setItem("user",phone);
-  user=phone;
-  document.getElementById("username").innerText="User: "+phone;
-
-  closeLogin();
+  signInWithPhoneNumber(auth, phone, window.recaptchaVerifier)
+    .then(res=>{
+      confirmationResult = res;
+      alert("OTP sent!");
+      document.getElementById("otp").style.display="block";
+      document.getElementById("verifyBtn").style.display="block";
+    })
+    .catch(err=>alert(err.message));
 }
 
-function logout(){
-  localStorage.removeItem("user");
-  user=null;
-  document.getElementById("username").innerText="";
+function verifyOTP(){
+  let code = document.getElementById("otp").value;
+
+  confirmationResult.confirm(code).then(result=>{
+    let user = result.user;
+    localStorage.setItem("user",user.phoneNumber);
+    document.getElementById("username").innerText=user.phoneNumber;
+    closeLogin();
+  }).catch(()=>alert("Invalid OTP"));
 }
 
-if(user){
-  document.getElementById("username").innerText="User: "+user;
+function checkout(){
+  if(cart.length==0) return alert("Cart empty");
+
+  let total=0;
+  cart.forEach(i=> total+=i.price);
+
+  let upi = "upi://pay?pa=ritusingla@okbsi&pn=QuickStationery&am="+total+"&cu=INR";
+  window.open("https://api.qrserver.com/v1/create-qr-code/?size=200x200&data="+encodeURIComponent(upi));
 }
 
 function getLocation(){
   navigator.geolocation.getCurrentPosition(pos=>{
-    let lat=pos.coords.latitude;
-    let lon=pos.coords.longitude;
     document.getElementById("locationText").innerText=
-      lat.toFixed(2)+", "+lon.toFixed(2);
+      pos.coords.latitude.toFixed(2)+","+pos.coords.longitude.toFixed(2);
   });
 }
 
-function showPage(page){
-  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
-  document.getElementById(page).classList.add("active");
+function showPage(p){
+  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+  document.getElementById(p).classList.add("active");
 }
-
-<script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
-
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyCUhTRKR6zj2mPgqBc8bSXbN6TdxOqITRc",
-    authDomain: "notejet-202b8.firebaseapp.com",
-    projectId: "notejet-202b8",
-    storageBucket: "notejet-202b8.firebasestorage.app",
-    messagingSenderId: "1003251859857",
-    appId: "1:1003251859857:web:744161e9613f62f7fa9a30",
-    measurementId: "G-YYMLJ86YNZ"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-</script>
 </script>
 
 </body>
