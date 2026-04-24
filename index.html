@@ -225,7 +225,7 @@ function checkout(){
   let total=0;
   cart.forEach(i=> total+=i.price);
 
-  let upi = "upi://pay?pa=ritusingla@okbsi&pn=QuickStationery&am="+total+"&cu=INR";
+  let upi = "upi://pay?pa=ritusingla07@oksbi&pn=QuickStationery&am="+total+"&cu=INR";
   window.open("https://api.qrserver.com/v1/create-qr-code/?size=200x200&data="+encodeURIComponent(upi));
 }
 
