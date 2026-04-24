@@ -15,20 +15,8 @@
       font-size:20px;
     }
 
-    .topbar {
-      display:flex;
-      justify-content:space-between;
-      padding:10px;
-    }
-
-    button {
-      background:#2ecc71;
-      color:white;
-      border:none;
-      padding:8px;
-      border-radius:8px;
-      cursor:pointer;
-    }
+    .page { display:none; padding-bottom:80px; }
+    .active { display:block; }
 
     .products {
       display:grid;
@@ -52,18 +40,75 @@
       border-radius:8px;
     }
 
+    button {
+      background:#2ecc71;
+      color:white;
+      border:none;
+      padding:8px;
+      border-radius:8px;
+      cursor:pointer;
+    }
+
+    .bottom-nav {
+      position:fixed;
+      bottom:0;
+      width:100%;
+      background:white;
+      display:flex;
+      justify-content:space-around;
+      padding:10px 0;
+      box-shadow:0 -2px 5px rgba(0,0,0,0.1);
+    }
+
     .cart-btn {
       position:fixed;
-      bottom:20px;
+      bottom:70px;
       right:20px;
       background:#ffd400;
       padding:15px;
       border-radius:50%;
       cursor:pointer;
+      font-size:18px;
     }
 
-    .section {
+    .section { padding:10px; }
+
+    /* LOGIN MODAL */
+    #loginModal {
+      display:none;
+      position:fixed;
+      top:0;
+      left:0;
+      width:100%;
+      height:100%;
+      background:rgba(0,0,0,0.5);
+    }
+
+    .modal-box {
+      width:90%;
+      max-width:400px;
+      background:linear-gradient(135deg,#6a0dad,#b92b7c);
+      margin:100px auto;
+      padding:20px;
+      border-radius:15px;
+      color:white;
+      position:relative;
+    }
+
+    .close {
+      position:absolute;
+      right:15px;
+      top:10px;
+      cursor:pointer;
+      font-size:20px;
+    }
+
+    input {
+      width:100%;
       padding:10px;
+      border-radius:10px;
+      border:none;
+      margin-top:10px;
     }
   </style>
 </head>
@@ -72,20 +117,63 @@
 
 <header>⚡ QuickStationery</header>
 
-<div class="topbar">
-  <button onclick="getLocation()">📍 Location</button>
-  <button onclick="login()">👤 Login</button>
+<!-- HOME -->
+<div id="home" class="page active">
+  <div class="products" id="products"></div>
 </div>
 
-<div id="locationText" style="padding:10px;"></div>
+<!-- ORDERS -->
+<div id="orders" class="page">
+  <div class="section">
+    <h3>📦 Your Orders</h3>
+    <div id="history"></div>
+  </div>
+</div>
 
-<div class="products" id="products"></div>
+<!-- ACCOUNT -->
+<div id="account" class="page">
+  <div class="section">
+    <h3>👤 Account</h3>
+    <p id="username"></p>
 
+    <button onclick="login()">Login</button>
+    <br><br>
+
+    <h4>📍 Address</h4>
+    <button onclick="getLocation()">Use Current Location</button>
+    <p id="locationText"></p>
+
+    <br>
+    <button onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<!-- CART -->
 <div class="cart-btn" onclick="checkout()">🛒</div>
 
-<div class="section">
-  <h3>📦 Order History</h3>
-  <div id="history"></div>
+<!-- NAV -->
+<div class="bottom-nav">
+  <div onclick="showPage('home')">🏠 Home</div>
+  <div onclick="showPage('orders')">📦 Orders</div>
+  <div onclick="showPage('account')">👤 Account</div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div id="loginModal">
+  <div class="modal-box">
+    <span class="close" onclick="closeLogin()">✖</span>
+
+    <h2>QuickStationery</h2>
+    <p>Delivery in minutes ⚡</p>
+
+    <input id="phoneInput" placeholder="Enter Phone Number">
+
+    <button style="margin-top:15px; width:100%; background:#ff4da6;" onclick="submitLogin()">
+      Continue
+    </button>
+
+    <p style="font-size:12px;">Terms & Privacy</p>
+  </div>
 </div>
 
 <script>
@@ -132,14 +220,12 @@ function checkout(){
 
   msg+="Total ₹"+total;
 
-  // save history
   let history = JSON.parse(localStorage.getItem("history")||"[]");
   history.push(msg);
   localStorage.setItem("history",JSON.stringify(history));
   showHistory();
 
-  // UPI QR
- let upi = "upi://pay?pa=ritusingla007@oksbi&pn=QuickStationery&am="+total;
+  let upi = "upi://pay?pa=ritusingla007@oksbi&pn=QuickStationery&am="+total+"&cu=INR";
   window.open("https://api.qrserver.com/v1/create-qr-code/?size=200x200&data="+encodeURIComponent(upi));
 
   cart=[];
@@ -154,12 +240,36 @@ function showHistory(){
 showHistory();
 
 function login(){
-  let name = prompt("Enter your name");
-  if(name){
-    localStorage.setItem("user",name);
-    user=name;
-    alert("Logged in as "+name);
+  document.getElementById("loginModal").style.display="block";
+}
+
+function closeLogin(){
+  document.getElementById("loginModal").style.display="none";
+}
+
+function submitLogin(){
+  let phone = document.getElementById("phoneInput").value;
+
+  if(phone.length < 10){
+    alert("Enter valid number");
+    return;
   }
+
+  localStorage.setItem("user",phone);
+  user=phone;
+  document.getElementById("username").innerText="User: "+phone;
+
+  closeLogin();
+}
+
+function logout(){
+  localStorage.removeItem("user");
+  user=null;
+  document.getElementById("username").innerText="";
+}
+
+if(user){
+  document.getElementById("username").innerText="User: "+user;
 }
 
 function getLocation(){
@@ -167,8 +277,13 @@ function getLocation(){
     let lat=pos.coords.latitude;
     let lon=pos.coords.longitude;
     document.getElementById("locationText").innerText=
-      "Location: "+lat.toFixed(2)+", "+lon.toFixed(2);
+      lat.toFixed(2)+", "+lon.toFixed(2);
   });
+}
+
+function showPage(page){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.getElementById(page).classList.add("active");
 }
 </script>
 
