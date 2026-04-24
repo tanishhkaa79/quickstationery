@@ -139,7 +139,7 @@ function checkout(){
   showHistory();
 
   // UPI QR
-  let upi = "upi:ritusingla007@oksbi&pn=QuickStationery&am="+total;
+ let upi = "upi://pay?pa=ritusingla007@oksbi&pn=QuickStationery&am="+total;
   window.open("https://api.qrserver.com/v1/create-qr-code/?size=200x200&data="+encodeURIComponent(upi));
 
   cart=[];
